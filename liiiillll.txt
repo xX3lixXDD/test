@@ -1,0 +1,174 @@
+-- DevTools GUI (LocalScript)
+-- للاستخدام التعليمي فقط داخل Roblox Studio
+-- 🧩 واجهة واحدة تتحكم بالحركة والتصحيح البصري والتنقل بالكاميرا
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- ====== GUI ======
+local gui = Instance.new("ScreenGui")
+gui.Name = "DevToolsGui"
+gui.ResetOnSpawn = false
+gui.Parent = playerGui
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 260, 0, 200)
+frame.Position = UDim2.new(0, 20, 0, 40)
+frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Draggable = true
+frame.Parent = gui
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, -10, 0, 24)
+title.Position = UDim2.new(0, 5, 0, 4)
+title.BackgroundTransparency = 1
+title.Text = "🛠 DevTools Panel"
+title.TextColor3 = Color3.new(1,1,1)
+title.Font = Enum.Font.SourceSansBold
+title.TextSize = 17
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = frame
+
+-- أزرار الإغلاق والتصغير
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 24, 0, 24)
+closeBtn.Position = UDim2.new(1, -28, 0, 3)
+closeBtn.BackgroundColor3 = Color3.fromRGB(180,0,0)
+closeBtn.Text = "X"
+closeBtn.TextColor3 = Color3.new(1,1,1)
+closeBtn.Font = Enum.Font.SourceSansBold
+closeBtn.TextSize = 16
+closeBtn.Parent = frame
+
+local miniBtn = Instance.new("TextButton")
+miniBtn.Size = UDim2.new(0, 24, 0, 24)
+miniBtn.Position = UDim2.new(1, -56, 0, 3)
+miniBtn.BackgroundColor3 = Color3.fromRGB(100,100,100)
+miniBtn.Text = "-"
+miniBtn.TextColor3 = Color3.new(1,1,1)
+miniBtn.Font = Enum.Font.SourceSansBold
+miniBtn.TextSize = 16
+miniBtn.Parent = frame
+
+-- منطقة المحتوى
+local content = Instance.new("Frame")
+content.Size = UDim2.new(1, -20, 1, -40)
+content.Position = UDim2.new(0, 10, 0, 35)
+content.BackgroundTransparency = 1
+content.Parent = frame
+
+-- ====== تحكم بالحركة ======
+local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+player.CharacterAdded:Connect(function(char)
+	humanoid = char:WaitForChild("Humanoid")
+end)
+
+local speedBox = Instance.new("TextBox")
+speedBox.Size = UDim2.new(0, 100, 0, 25)
+speedBox.Position = UDim2.new(0, 0, 0, 0)
+speedBox.PlaceholderText = "WalkSpeed"
+speedBox.Text = ""
+speedBox.Parent = content
+
+local jumpBox = Instance.new("TextBox")
+jumpBox.Size = UDim2.new(0, 100, 0, 25)
+jumpBox.Position = UDim2.new(0, 0, 0, 35)
+jumpBox.PlaceholderText = "JumpPower"
+jumpBox.Text = ""
+jumpBox.Parent = content
+
+local applyBtn = Instance.new("TextButton")
+applyBtn.Size = UDim2.new(0, 80, 0, 25)
+applyBtn.Position = UDim2.new(0, 110, 0, 0)
+applyBtn.Text = "Apply"
+applyBtn.BackgroundColor3 = Color3.fromRGB(40,120,200)
+applyBtn.TextColor3 = Color3.new(1,1,1)
+applyBtn.Parent = content
+
+applyBtn.MouseButton1Click:Connect(function()
+	if not humanoid then return end
+	local ws = tonumber(speedBox.Text)
+	local jp = tonumber(jumpBox.Text)
+	if ws then humanoid.WalkSpeed = ws end
+	if jp then humanoid.JumpPower = jp end
+end)
+
+-- ====== التصحيح البصري (Debug Visuals) ======
+local visualsBtn = Instance.new("TextButton")
+visualsBtn.Size = UDim2.new(0, 190, 0, 25)
+visualsBtn.Position = UDim2.new(0, 0, 0, 70)
+visualsBtn.Text = "Toggle Debug Visuals"
+visualsBtn.BackgroundColor3 = Color3.fromRGB(90,90,90)
+visualsBtn.TextColor3 = Color3.new(1,1,1)
+visualsBtn.Parent = content
+
+local debugEnabled = false
+visualsBtn.MouseButton1Click:Connect(function()
+	debugEnabled = not debugEnabled
+	for _, obj in ipairs(Workspace:GetDescendants()) do
+		if obj:IsA("BasePart") then
+			if debugEnabled then
+				obj.Color = Color3.fromRGB(255,0,0)
+				obj.Material = Enum.Material.Neon
+			else
+				obj.Material = Enum.Material.Plastic
+			end
+		end
+	end
+end)
+
+-- ====== التنقل بالكاميرا إلى كائن ======
+local targetBox = Instance.new("TextBox")
+targetBox.Size = UDim2.new(0, 130, 0, 25)
+targetBox.Position = UDim2.new(0, 0, 0, 110)
+targetBox.PlaceholderText = "Object name"
+targetBox.Parent = content
+
+local camBtn = Instance.new("TextButton")
+camBtn.Size = UDim2.new(0, 50, 0, 25)
+camBtn.Position = UDim2.new(0, 140, 0, 110)
+camBtn.Text = "Focus"
+camBtn.BackgroundColor3 = Color3.fromRGB(50,150,80)
+camBtn.TextColor3 = Color3.new(1,1,1)
+camBtn.Parent = content
+
+camBtn.MouseButton1Click:Connect(function()
+	local name = targetBox.Text
+	if name == "" then return end
+	local obj = Workspace:FindFirstChild(name, true)
+	if obj and obj:IsA("BasePart") then
+		Workspace.CurrentCamera.CFrame = CFrame.new(
+			obj.Position + Vector3.new(0, 5, 10),
+			obj.Position
+		)
+	end
+end)
+
+-- ====== أزرار الإغلاق والتصغير ======
+local minimized = false
+local savedSize = frame.Size
+
+miniBtn.MouseButton1Click:Connect(function()
+	minimized = not minimized
+	for _, c in ipairs(frame:GetChildren()) do
+		if c ~= title and c ~= closeBtn and c ~= miniBtn then
+			c.Visible = not minimized
+		end
+	end
+	if minimized then
+		frame.Size = UDim2.new(0, 260, 0, 30)
+	else
+		frame.Size = savedSize
+	end
+end)
+
+closeBtn.MouseButton1Click:Connect(function()
+	gui:Destroy()
+end)
+
+print("[✅] DevTools GUI loaded (for learning/debug use only).")
